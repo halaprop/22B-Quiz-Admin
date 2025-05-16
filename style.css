@@ -1,0 +1,59 @@
+#editor-container {
+  height: calc(100vh);
+}
+
+.sidebar {
+  overflow-y: auto;
+  padding: 10px;
+}
+
+#student-list li.uk-active {
+  background-color: #e0e0e0;
+  font-weight: bold;
+  border-radius: 4px;
+}
+
+.response-label {
+  min-width: 10rem;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+}
+
+.code-font {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.colored-range::-webkit-slider-thumb {
+  background-color: white;
+}
+
+.colored-range[data-value="0"]::-webkit-slider-thumb {
+  background-color: red;
+}
+
+.colored-range[data-value="1"]::-webkit-slider-thumb {
+  background-color: yellow;
+}
+
+.colored-range[data-value="2"]::-webkit-slider-thumb {
+  background-color: green;
+}
+
+/* Firefox */
+.colored-range::-moz-range-thumb {
+  background-color: white;
+}
+
+.colored-range[data-value="0"]::-moz-range-thumb {
+  background-color: red;
+}
+
+.colored-range[data-value="1"]::-moz-range-thumb {
+  background-color: yellow;
+}
+
+.colored-range[data-value="2"]::-moz-range-thumb {
+  background-color: green;
+}
