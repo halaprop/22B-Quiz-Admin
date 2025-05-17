@@ -31,12 +31,25 @@ class QuizAdmin {
         this.start();
       }
     });
+
+    const searchInput = document.getElementById('student-search');
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      const recordMatches = record => {
+        const matchWith = (`${record.lastName}, ${record.firstName} ${record.studentID}`)
+        return matchWith.toLowerCase().includes(query);
+      };
+      this.filteredRecords = this.records.filter(recordMatches);
+      this.renderStudentList();
+      this.selectStudent(null, null);
+    });
   }
 
   async start() {
     if (remoteStorage) {
       this.loginButton.hidden = true;
       this.records = await this.initResults();
+      this.filteredRecords = [...this.records];
       this.editor = await this.startEditor();
       this.render();
     } else {
@@ -64,16 +77,7 @@ class QuizAdmin {
 
   async render() {
     this.loginButton.hidden = true;
-    // list of students
-    this.listEl.innerHTML = "";
-    this.records.forEach((record, index) => {
-      const li = document.createElement("li");
-      this.setStudentListName(li, record);
-      li.style.cursor = 'pointer';
-      li.addEventListener("click", () => this.selectStudent(li, index));
-      this.listEl.appendChild(li);
-    });
-
+    this.renderStudentList();
     // rubric selectors
     let rubricHTML = '';
     this.rubricFields.forEach((rubricField, i) => {
@@ -99,6 +103,17 @@ class QuizAdmin {
       selectEl.addEventListener('change', (event) => {
         this.scoringSelectChanged(selectEl);
       });
+    });
+  }
+
+  renderStudentList() {
+    this.listEl.innerHTML = "";
+    this.filteredRecords.forEach((record, index) => {
+      const li = document.createElement("li");
+      this.setStudentListName(li, record);
+      li.style.cursor = 'pointer';
+      li.addEventListener("click", () => this.selectStudent(li, index));
+      this.listEl.appendChild(li);
     });
   }
 
@@ -150,25 +165,52 @@ class QuizAdmin {
   selectStudent(li, index) {
     this.listEl = document.getElementById("student-list");
     this.listEl.querySelectorAll("li").forEach(el => el.classList.remove("uk-active"));
-    li.classList.add("uk-active");
 
-    this.selectedRecord = this.records[index];
-    this.selectedLi = li; // so we can add a check when the "overall" score is set
+    if (!li) {
+      this.clearSelection();
+    } else {
+      li.classList.add("uk-active");
+      this.selectedRecord = this.filteredRecords[index];
+      this.selectedLi = li;
+      this.renderRecord(this.selectedRecord);
+      this.scoringSelects.forEach(selectEl => selectEl.disabled = false);
+    }
+  }
 
-    document.getElementById("student-firstName").textContent = this.selectedRecord.firstName;
-    document.getElementById("student-lastName").textContent = this.selectedRecord.lastName;
-    document.getElementById("student-id").textContent = this.selectedRecord.studentID;
+  clearSelection() {
+    this.selectedRecord = null;
+    this.selectedLi = null;
+
+    ['student-firstName', 'student-lastName', 'student-id', 'hashed-id'].forEach(id => {
+      document.getElementById(id).textContent = '';
+    });
+
+    // Clear rubric fields
     this.rubricFields.forEach(rubricField => {
-      const rubricKey = rubricField.key
+      const selectEl = this.scoringSelects.find(selectEl => selectEl.id === rubricField.key);
+      this.setSelectValue(selectEl, '');
+      selectEl.disabled = true;
+    });
+    this.editor.setValue('');
+  }
+
+  renderRecord(record) {
+    const { firstName, lastName, studentID, hashedID, response } = record;
+    document.getElementById("student-firstName").textContent = firstName;
+    document.getElementById("student-lastName").textContent = lastName;
+    document.getElementById("student-id").textContent = studentID;
+    document.getElementById("hashed-id").textContent = hashedID;
+
+    this.rubricFields.forEach(rubricField => {
+      const rubricKey = rubricField.key;
       const selectEl = this.scoringSelects.find(selectEl => selectEl.id === rubricKey);
-      const value = (this.selectedRecord.scores && this.selectedRecord.scores[rubricKey]) || '';
+      const value = (record.scores && record.scores[rubricKey]) || '';
       this.setSelectValue(selectEl, value);
     });
-    this.scoringSelects.forEach(selectEl => selectEl.disabled = false);
-    this.editor.setValue(this.selectedRecord.response);
+
+    this.editor.setValue(response);
   }
 }
-
 /*************************************************************************************************/
 /*************************************************************************************************/
 
