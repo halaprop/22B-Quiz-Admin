@@ -13,6 +13,15 @@ class QuizAdmin {
     this.busySpinner = document.getElementById('busy-spinner');
     this.loginButton = document.getElementById('login-btn');
     this.listEl = document.getElementById("student-list");
+    this.rubricFields = [
+      { label: 'Declaration', key: 'declaration' },
+      { label: 'Loop', key: 'loop' },
+      { label: 'Conditional', key: 'conditional' },
+      { label: 'Console Out', key: 'consoleOut' },
+      { label: 'Return', key: 'return' },
+      { label: 'Invocation', key: 'invocation' },
+      { label: 'Overall', key: 'overall' }
+    ];
 
     this.loginButton.addEventListener('click', async () => {
       atKey = await UIkit.modal.prompt('Enter the admin key');
@@ -27,7 +36,6 @@ class QuizAdmin {
   async start() {
     if (remoteStorage) {
       this.loginButton.hidden = true;
-      this.rubricFields = ['Declaration', 'Loop', 'Conditional', 'Console Out', 'Return', 'Invocation', 'Overall' ];
       this.records = await this.initResults();
       this.editor = await this.startEditor();
       this.render();
@@ -60,30 +68,37 @@ class QuizAdmin {
     this.listEl.innerHTML = "";
     this.records.forEach((record, index) => {
       const li = document.createElement("li");
-      const check = record.Overall ? '\u2713' : '';
-      li.textContent = `${record.lastName}, ${record.firstName} ${check}`;
+      this.setStudentListName(li, record);
       li.style.cursor = 'pointer';
       li.addEventListener("click", () => this.selectStudent(li, index));
       this.listEl.appendChild(li);
     });
 
-    // rubric sliders
+    // rubric selectors
     let rubricHTML = '';
     this.rubricFields.forEach((rubricField, i) => {
       rubricHTML += `
-        <div>
-          <label for="${rubricField}" class="response-label">${rubricField}</label>
-          <input id="${rubricField}" class="uk-range colored-range" type="range" min="0" max="2" step="1">
+      <div class="grid-item">
+        <div class="uk-flex uk-margin-small">
+          <label class="response-label">${rubricField.label}</label>
+          <select id="${rubricField.key}" class="rubric-select uk-select uk-width-auto" disabled>
+            <option value="">-</option>
+            <option value="3">Proficient</option>
+            <option value="2">Emerging</option>
+            <option value="1">Unprepared</option>
+          </select>
         </div>
+      </div>
       `;
     });
     const rubricEl = document.getElementById('rubric-div');
     rubricEl.innerHTML = rubricHTML;
-    this.sliders = [...document.querySelectorAll('.colored-range')];
+    this.scoringSelects = [...document.querySelectorAll('.rubric-select')];
 
-    this.sliders.forEach(slider => {
-      slider.addEventListener('input', () => this.sliderChanged(slider));
-      slider.disabled = true;
+    this.scoringSelects.forEach(selectEl => {
+      selectEl.addEventListener('change', (event) => {
+        this.scoringSelectChanged(selectEl);
+      });
     });
   }
 
@@ -103,18 +118,31 @@ class QuizAdmin {
     return editor;
   }
 
-  async sliderChanged(slider) {
-    slider.setAttribute('data-value', slider.value); // sets thumb color
-    const id = slider.id;
-    const value = this.slider2Model(slider.value);
-    this.selectedRecord[id] = value;
+  setSelectValue(selectEl, value) {
+    const colorForValue = value => ({ '1': '#ffdddd', '2': '#ffeb99', '3': '#b3ff99' }[value] || '#ffffff');
+    selectEl.value = value;
+    selectEl.style.backgroundColor = colorForValue(value);
+  }
+
+  setStudentListName(listEl, record) {
+    const check = record.scores?.overall ? '\u2713' : '';
+    listEl.textContent = `${record.lastName}, ${record.firstName} ${check}`;
+  }
+
+  async scoringSelectChanged(selectEl) {
+    if (!this.selectedRecord) return;
+
+    const value = selectEl.value;
+    this.setSelectValue(selectEl, value);
+
+    const id = selectEl.id;
+    (this.selectedRecord.scores ||= {})[id] = value;
 
     this.busySpinner.hidden = false;
     await remoteStorage.setItem(this.selectedRecord.hashedID, this.selectedRecord);
 
-    if (id == 'Overall') {
-      const fields = this.selectedRecord;
-      this.selectedLi.textContent = `${fields.lastName}, ${fields.firstName} \u2713`;
+    if (id == 'overall') {
+      this.setStudentListName(this.selectedLi, this.selectedRecord);
     }
     this.busySpinner.hidden = true;
   }
@@ -125,35 +153,19 @@ class QuizAdmin {
     li.classList.add("uk-active");
 
     this.selectedRecord = this.records[index];
-    this.selectedLi = li; // so we can add a check when the "Overall" slider value is set
+    this.selectedLi = li; // so we can add a check when the "overall" score is set
 
     document.getElementById("student-firstName").textContent = this.selectedRecord.firstName;
     document.getElementById("student-lastName").textContent = this.selectedRecord.lastName;
     document.getElementById("student-id").textContent = this.selectedRecord.studentID;
     this.rubricFields.forEach(rubricField => {
-      const sliderEl = this.sliders.find(slider => slider.id === rubricField);
-      const value = this.selectedRecord[rubricField];
-      if (value) {
-        const sliderValue = this.model2Slider(value);
-        sliderEl.value = sliderValue;
-        sliderEl.setAttribute('data-value', sliderValue);
-      } else {
-        sliderEl.value = 1;
-        sliderEl.setAttribute('data-value', 'white');
-      }
+      const rubricKey = rubricField.key
+      const selectEl = this.scoringSelects.find(selectEl => selectEl.id === rubricKey);
+      const value = (this.selectedRecord.scores && this.selectedRecord.scores[rubricKey]) || '';
+      this.setSelectValue(selectEl, value);
     });
-    this.sliders.forEach(slider => slider.disabled = false);
+    this.scoringSelects.forEach(selectEl => selectEl.disabled = false);
     this.editor.setValue(this.selectedRecord.response);
-  }
-
-  model2Slider(value) {
-    const mapping = { L: '0', M: '1', H: '2' };
-    return mapping[value] ?? null;
-  }
-
-  slider2Model(value) {
-    const mapping = { '0': 'L', '1': 'M', '2': 'H' };
-    return mapping[value] ?? null;
   }
 }
 

@@ -14,46 +14,18 @@
 }
 
 .response-label {
-  min-width: 10rem;
+  min-width: 7rem;
   text-transform: uppercase;
   font-size: 0.7rem;
+}
+
+.uk-select {
+  font-size: 0.85rem;
+  height: 1.7rem !important; 
 }
 
 .code-font {
   font-family: 'Courier New', Courier, monospace;
   font-size: 1rem;
   font-weight: bold;
-}
-
-.colored-range::-webkit-slider-thumb {
-  background-color: white;
-}
-
-.colored-range[data-value="0"]::-webkit-slider-thumb {
-  background-color: red;
-}
-
-.colored-range[data-value="1"]::-webkit-slider-thumb {
-  background-color: yellow;
-}
-
-.colored-range[data-value="2"]::-webkit-slider-thumb {
-  background-color: green;
-}
-
-/* Firefox */
-.colored-range::-moz-range-thumb {
-  background-color: white;
-}
-
-.colored-range[data-value="0"]::-moz-range-thumb {
-  background-color: red;
-}
-
-.colored-range[data-value="1"]::-moz-range-thumb {
-  background-color: yellow;
-}
-
-.colored-range[data-value="2"]::-moz-range-thumb {
-  background-color: green;
 }
