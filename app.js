@@ -128,7 +128,8 @@ class QuizAdmin {
       lineNumbers: 'on',
       minimap: { enabled: false },
       suggestions: false,
-      wordBasedSuggestions: false
+      wordBasedSuggestions: false,
+      readOnly: true,
     });
     return editor;
   }
