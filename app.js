@@ -80,12 +80,31 @@ class QuizAdmin {
     this.renderStudentList();
     // rubric selectors
     let rubricHTML = '';
-    this.rubricFields.forEach((rubricField, i) => {
-      rubricHTML += `
-      <div class="grid-item">
-        <div class="uk-flex uk-margin-small">
-          <label class="response-label">${rubricField.label}</label>
-          <select id="${rubricField.key}" class="rubric-select uk-select uk-width-auto" disabled>
+    this.rubricFields.forEach(rubricField => {
+      rubricHTML += this.rubricMarkup(rubricField);
+    });
+
+    document.getElementById('rubric-div').innerHTML = `
+      <div class="uk-grid-collapse uk-grid-match uk-child-width-1-3@m" uk-grid style="width: 100%;">
+        ${rubricHTML}
+      </div>
+    `;
+    this.scoringSelects = [...document.querySelectorAll('.rubric-select')];
+    this.scoringSelects.forEach(selectEl => {
+      selectEl.addEventListener('change', (event) => {
+        this.scoringSelectChanged(selectEl);
+      });
+    });
+  }
+
+  rubricMarkup(rubricField) {
+    return `
+      <div class="uk-flex uk-flex-middle" style="height: 2.5rem;">
+        <div style="flex: 0 0 50%; text-align: right; padding-right: 0.5rem;">
+          <label for="${rubricField.key}" class="uk-form-label response-label">${rubricField.label}</label>
+        </div>
+        <div style="flex: 0 0 50%; text-align: left; padding-left: 0.5rem;">
+          <select id="${rubricField.key}" class="uk-select uk-width-auto rubric-select" disabled>
             <option value="">-</option>
             <option value="3">Proficient</option>
             <option value="2">Emerging</option>
@@ -93,17 +112,7 @@ class QuizAdmin {
           </select>
         </div>
       </div>
-      `;
-    });
-    const rubricEl = document.getElementById('rubric-div');
-    rubricEl.innerHTML = rubricHTML;
-    this.scoringSelects = [...document.querySelectorAll('.rubric-select')];
-
-    this.scoringSelects.forEach(selectEl => {
-      selectEl.addEventListener('change', (event) => {
-        this.scoringSelectChanged(selectEl);
-      });
-    });
+    `;
   }
 
   renderStudentList() {
