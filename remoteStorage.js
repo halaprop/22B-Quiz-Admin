@@ -2,7 +2,7 @@
 export class RemoteStorage {
   constructor(namespace, token) {
     this.namespace = namespace;
-    this.endpoint = 'https://remote-storage.dan-5d7.workers.dev';
+    this.endpoint = 'https://remote-storage.dan-5d7.workers.dev/v1';
     this.requestHeaders = {
       'Authorization': token,
       'Content-Type': 'application/json'  

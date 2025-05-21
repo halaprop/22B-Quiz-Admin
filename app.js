@@ -58,13 +58,12 @@ class QuizAdmin {
     }
   }
 
-  // return results records, first adding any missing responses
   async initResults() {
     const responses = [];
     const keys = await remoteStorage.keys();
     for (let key of keys) {
       const response = await remoteStorage.getItem(key);
-      responses.push(response);
+      responses.push(response.value);
     }
 
     responses.sort((a, b) => {
