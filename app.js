@@ -137,6 +137,7 @@ class QuizAdmin {
       minimap: { enabled: false },
       suggestions: false,
       wordBasedSuggestions: false,
+      readOnly: true
     });
     return editor;
   }
