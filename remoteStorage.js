@@ -34,6 +34,10 @@ export class RemoteStorage {
     return this.fetch('GET', '/get', null, { key });
   }
 
+  async getItemWithMetadata(key) {
+    return this.fetch('GET', '/getWithMetadata', null, { key });
+  }
+
   async removeItem(key) {
     return this.fetch('DELETE', '/delete', null, { key });
   }

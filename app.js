@@ -62,8 +62,8 @@ class QuizAdmin {
     const responses = [];
     const keys = await remoteStorage.keys();
     for (let key of keys) {
-      const response = await remoteStorage.getItem(key);
-      responses.push(response.value);
+      const value = await remoteStorage.getItem(key);
+      responses.push(value);
     }
 
     responses.sort((a, b) => {
