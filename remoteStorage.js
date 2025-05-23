@@ -8,9 +8,9 @@ export class RemoteStorage {
     };
   }
 
+  // Returns an array of all keys
   async keys() {
-    let result = [];
-    let cursor = null;
+    let result = [], cursor = null;
 
     while (true) {
       const { keys, cursor: nextCursor, list_complete } = await this.keysPaged({ cursor });
@@ -18,11 +18,18 @@ export class RemoteStorage {
       if (list_complete) break;
       cursor = nextCursor;
     }
-
     return result;
   }
 
-  async keysPaged({ limit = 1000, cursor = null } = {}) {
+  // Returns { keys: [...], cursor, list_complete }
+  async keysPaged({ limit = 1000, cursor: inputCursor = null } = {}) {
+    const { items, cursor, list_complete } = await this.list({ limit, cursor: inputCursor });
+    const keys = items.map(item => item.name);
+    return { keys, cursor, list_complete };
+  }
+
+  // Returns { items: [{ name, metadata : { creationTime, updateTime } }], cursor, list_complete }
+  async list({ limit = 1000, cursor = null } = {}) {
     return this.fetch('GET', '/list', null, { limit, cursor });
   }
 
@@ -45,7 +52,8 @@ export class RemoteStorage {
   async clear() {
     const keys = await this.keys();
     const promises = keys.map(key => this.removeItem(key));
-    return Promise.all(promises).then(() => null);
+    await Promise.all(promises);
+    return null;
   }
 
   async fetch(method, path, data = null, queryParams = {}) {
@@ -67,6 +75,7 @@ export class RemoteStorage {
     try {
       const response = await fetch(url, options);
       const json = await response.json();
+      if (!response.ok) throw { error: json };
       return json;
     } catch (error) {
       console.log(`${method} ${url} → ERROR: ${error.message}`);
