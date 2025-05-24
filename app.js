@@ -48,7 +48,7 @@ class QuizAdmin {
   async start() {
     if (remoteStorage) {
       this.loginButton.hidden = true;
-      this.records = await this.initResults();
+      this.records = await this.fetchResponses();
       this.filteredRecords = [...this.records];
       this.editor = await this.startEditor();
       this.render();
@@ -58,7 +58,7 @@ class QuizAdmin {
     }
   }
 
-  async initResults() {
+  async fetchResponses() {
     const responses = [];
     const keys = await remoteStorage.keys();
     for (let key of keys) {
@@ -142,10 +142,12 @@ class QuizAdmin {
     return editor;
   }
 
+  // update the selector and change the selected record's score
   setSelectValue(selectEl, value) {
     const colorForValue = value => ({ '1': '#ffdddd', '2': '#ffeb99', '3': '#b3ff99' }[value] || '#ffffff');
     selectEl.value = value;
     selectEl.style.backgroundColor = colorForValue(value);
+    (this.selectedRecord.scores ||= {})[selectEl.id] = value;
   }
 
   setStudentListName(listEl, record) {
@@ -156,18 +158,24 @@ class QuizAdmin {
   async scoringSelectChanged(selectEl) {
     if (!this.selectedRecord) return;
 
+    const id = selectEl.id;
     const value = selectEl.value;
     this.setSelectValue(selectEl, value);
-
-    const id = selectEl.id;
-    (this.selectedRecord.scores ||= {})[id] = value;
-
-    this.busySpinner.hidden = false;
-    await remoteStorage.setItem(this.selectedRecord.hashedID, this.selectedRecord);
-
+    
+    // when overall is set, set any uninitialized selectors to the same value
     if (id == 'overall') {
       this.setStudentListName(this.selectedLi, this.selectedRecord);
+
+      this.scoringSelects.forEach(selectEl => {
+        if (selectEl.id !== id && selectEl.value == '') {
+          this.setSelectValue(selectEl, value);
+        } 
+      });
     }
+
+    // save the selected record
+    this.busySpinner.hidden = false;
+    await remoteStorage.setItem(this.selectedRecord.hashedID, this.selectedRecord);
     this.busySpinner.hidden = true;
   }
 
