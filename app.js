@@ -150,9 +150,14 @@ class QuizAdmin {
     (this.selectedRecord.scores ||= {})[selectEl.id] = value;
   }
 
+  truncate(str, length=18) {
+    return str.length > length ? str.slice(0, length - 1) + '…' : str;
+  };
+
   setStudentListName(listEl, record) {
     const check = record.scores?.overall ? '\u2713' : '';
-    listEl.textContent = `${record.lastName}, ${record.firstName} ${check}`;
+    const fullName = `${record.lastName}, ${record.firstName}`;
+    listEl.textContent = `${this.truncate(fullName, 28)}, ${check}`;
   }
 
   async scoringSelectChanged(selectEl) {
@@ -213,8 +218,8 @@ class QuizAdmin {
 
   renderRecord(record) {
     const { firstName, lastName, studentID, hashedID, response } = record;
-    document.getElementById("student-firstName").textContent = firstName;
-    document.getElementById("student-lastName").textContent = lastName;
+    document.getElementById("student-firstName").textContent = this.truncate(firstName);
+    document.getElementById("student-lastName").textContent = this.truncate(lastName);
     document.getElementById("student-id").textContent = studentID;
     document.getElementById("hashed-id").textContent = hashedID;
 
