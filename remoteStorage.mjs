@@ -33,22 +33,27 @@ export class RemoteStorage {
     return this.fetch('GET', '/list', null, { limit, cursor });
   }
 
+  // Returns null
   async setItem(key, value) {
     return this.fetch('POST', '/set', { key, value });
   }
 
+  // Returns value
   async getItem(key) {
     return this.fetch('GET', '/get', null, { key });
   }
 
+  // Returns { value, metadata }
   async getItemWithMetadata(key) {
     return this.fetch('GET', '/getWithMetadata', null, { key });
   }
 
+  // Returns null
   async removeItem(key) {
     return this.fetch('DELETE', '/delete', null, { key });
   }
 
+  // Returns null
   async clear() {
     const keys = await this.keys();
     const promises = keys.map(key => this.removeItem(key));

@@ -1,5 +1,5 @@
 
-import { RemoteStorage } from "./remoteStorage.js";
+import { RemoteStorage } from "./remoteStorage.mjs";
 
 
 class QuizAdmin {
