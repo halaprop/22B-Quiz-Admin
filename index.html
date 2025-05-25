@@ -33,7 +33,7 @@
     <div class="uk-width-1-4@s sidebar uk-background-muted">
       <h4 class="uk-heading-bullet">Responses</h4>
       <input id="student-search" class="uk-input uk-margin-small-bottom" type="text" placeholder="Filter by name or ID" />
-      <input type="text" id="max-date" class="uk-input uk-form-width-medium uk-width-1-1 uk-margin-small-bottom" placeholder="Max submit time before">
+      <input type="text" id="max-date" class="uk-input uk-form-width-medium uk-width-1-1 uk-margin-small-bottom" placeholder="Max submission date">
       <ul id="student-list"
         class="uk-list uk-list-striped uk-list-hover uk-text-small uk-margin-remove-top uk-margin-small-bottom"></ul>
     </div>
@@ -44,7 +44,7 @@
         <div>
           <div class="uk-card uk-card-default uk-card-body uk-padding-small">
             <div class="uk-flex uk-flex-center uk-margin-small">
-              <div class="uk-grid-small uk-child-width-1-4@s uk-grid" id="student-info-display">
+              <div class="uk-grid-small uk-child-width-1-5@s uk-grid" id="student-info-display">
                 <div>
                   <div class="response-label">First Name</div>
                   <div class="uk-text-light" id="student-firstName">-</div>
@@ -60,6 +60,10 @@
                 <div>
                   <div class="response-label">Hashed ID</div>
                   <div id="hashed-id">-</div>
+                </div>
+                <div>
+                  <div class="response-label">Created at</div>
+                  <div id="creation-time">-</div>
                 </div>
               </div>
             </div>
