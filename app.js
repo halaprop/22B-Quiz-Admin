@@ -32,14 +32,9 @@ class QuizAdmin {
       }
     });
 
-    const searchInput = document.getElementById('student-search');
-    searchInput.addEventListener('input', (e) => {
-      const query = e.target.value.toLowerCase();
-      const recordMatches = record => {
-        const matchWith = (`${record.lastName}, ${record.firstName} ${record.studentID}`)
-        return matchWith.toLowerCase().includes(query);
-      };
-      this.filteredRecords = this.records.filter(recordMatches);
+    this.searchInput = document.getElementById('student-search');
+    this.searchInput.addEventListener('input', (e) => {
+      this.filteredRecords = this.filteredSubmissions();
       this.renderStudentList();
       this.selectStudent(null, null);
     });
@@ -48,8 +43,9 @@ class QuizAdmin {
   async start() {
     if (remoteStorage) {
       this.loginButton.hidden = true;
-      this.records = await this.fetchResponses();
-      this.filteredRecords = [...this.records];
+      this.submissions = await this.fetchSubmissions();
+      this.filteredRecords = this.filteredSubmissions();
+
       this.editor = await this.startEditor();
       this.render();
     } else {
@@ -58,24 +54,59 @@ class QuizAdmin {
     }
   }
 
-  async fetchResponses() {
-    const responses = [];
+  // Returns [ { hashedID, submissions: [ { creationDate, firstName, lastName, ... } ] } ]
+  // The submissions arrays will be ordered in time, newest first
+  async fetchSubmissions() {
+    const submissionIndex = {};
+
     const keys = await remoteStorage.keys();
     for (let key of keys) {
-      const value = await remoteStorage.getItem(key);
-      responses.push(value);
+      const [hashedID, _] = key.split('@');
+      const { value, metadata } = await remoteStorage.getItemWithMetadata(key);
+      value.creationTime = new Date(metadata.creationTime);
+      submissionIndex[hashedID] = [...(submissionIndex[hashedID] ?? []), value];
     }
 
-    responses.sort((a, b) => {
+    // Sort the keys by students' full names
+    const hashedIDs = Object.keys(submissionIndex).sort((a, b) => {
       const nameA = `${a.lastName},${a.firstName}`.toLowerCase();
       const nameB = `${b.lastName},${b.firstName}`.toLowerCase();
       return nameA.localeCompare(nameB);
     });
-    return responses;
+
+    const submissions = [];
+    for (const hashedID of hashedIDs) {
+      const sortedSubmissions = submissionIndex[hashedID].sort((a, b) => b.creationTime - a.creationTime);
+      const record = { hashedID, submissions: sortedSubmissions };
+      submissions.push(record);
+    }
+    return submissions;
+  }
+
+  filteredSubmissions() {
+    const matchString = this.searchInput.value.toLowerCase();
+    const maxDate = this.datePicker?.selectedDates?.[0];
+
+    const matches = [];
+    for (let record of this.submissions) {
+      for (let submission of record.submissions) {
+        const matchWith = `${submission.lastName}, ${submission.firstName} ${submission.studentID}`;
+        const alphaMatch = matchWith.toLowerCase().includes(matchString);
+        const timeMatch = maxDate ? submission.creationTime < maxDate : true;
+        if (alphaMatch && timeMatch) {
+          matches.push(submission);
+        }
+      }
+    }
+    return matches;
   }
 
   async render() {
+    const onDateChange = (selectedDates, dateStr, instance) => {
+      const iso = selectedDates[0]?.toISOString();
+    }
     this.loginButton.hidden = true;
+    this.datePicker = flatpickr("#max-date", { enableTime: true, onChange: onDateChange });
     this.renderStudentList();
     // rubric selectors
     let rubricHTML = '';
@@ -147,10 +178,9 @@ class QuizAdmin {
     const colorForValue = value => ({ '1': '#ffdddd', '2': '#ffeb99', '3': '#b3ff99' }[value] || '#ffffff');
     selectEl.value = value;
     selectEl.style.backgroundColor = colorForValue(value);
-    (this.selectedRecord.scores ||= {})[selectEl.id] = value;
   }
 
-  truncate(str, length=18) {
+  truncate(str, length = 18) {
     return str.length > length ? str.slice(0, length - 1) + '…' : str;
   };
 
@@ -166,7 +196,8 @@ class QuizAdmin {
     const id = selectEl.id;
     const value = selectEl.value;
     this.setSelectValue(selectEl, value);
-    
+    (this.selectedRecord.scores ||= {})[selectEl.id] = value;
+
     // when overall is set, set any uninitialized selectors to the same value
     if (id == 'overall') {
       this.setStudentListName(this.selectedLi, this.selectedRecord);
@@ -174,7 +205,8 @@ class QuizAdmin {
       this.scoringSelects.forEach(selectEl => {
         if (selectEl.id !== id && selectEl.value == '') {
           this.setSelectValue(selectEl, value);
-        } 
+          (this.selectedRecord.scores ||= {})[selectEl.id] = value;
+        }
       });
     }
 
@@ -238,3 +270,31 @@ class QuizAdmin {
 
 const quiz = new QuizAdmin();
 quiz.start();
+
+
+
+/**
+ * 
+    // for date filtering
+    // Select the most recent submission for each (but not more recent than max creation date)
+
+    for (const key of hashedIDs) {
+      const array = submissions[key];
+      if (!this.maxCreationDate) {
+        responses.push(array[0]); // just take the (newest)
+      } else {
+        const newestBeforeMax = array.find(obj => obj.creationTime <= this.maxCreationDate);
+        if (newestBeforeMax) responses.push(newestBeforeMax);
+      }
+    }
+
+
+    // for alpha filtering
+
+      const query = e.target.value.toLowerCase();
+      const recordMatches = record => {
+        const matchWith = (`${record.lastName}, ${record.firstName} ${record.studentID}`)
+        return matchWith.toLowerCase().includes(query);
+      };
+
+ */

@@ -7,10 +7,6 @@
   padding: 10px;
 }
 
-#student-search {
-  font-size: 0.8rem;
-}
-
 #student-list li.uk-active {
   background-color: #e0e0e0;
   font-weight: bold;

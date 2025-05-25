@@ -8,6 +8,10 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.16.24/dist/css/uikit.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/uikit@3.16.24/dist/js/uikit.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/uikit@3.16.24/dist/js/uikit-icons.min.js"></script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/loader.min.js"></script>
   <link rel="stylesheet" href="./style.css" />
 </head>
@@ -28,7 +32,8 @@
     <!-- Left Sidebar -->
     <div class="uk-width-1-4@s sidebar uk-background-muted">
       <h4 class="uk-heading-bullet">Responses</h4>
-      <input id="student-search" class="uk-input uk-margin-small-bottom" type="text" placeholder="Search for name or ID..." />
+      <input id="student-search" class="uk-input uk-margin-small-bottom" type="text" placeholder="Filter by name or ID" />
+      <input type="text" id="max-date" class="uk-input uk-form-width-medium uk-width-1-1 uk-margin-small-bottom" placeholder="Max submit time before">
       <ul id="student-list"
         class="uk-list uk-list-striped uk-list-hover uk-text-small uk-margin-remove-top uk-margin-small-bottom"></ul>
     </div>
