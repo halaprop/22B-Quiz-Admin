@@ -28,6 +28,24 @@ export class RemoteStorage {
     return { keys, cursor, list_complete };
   }
 
+  // Returns [ key: { value, metadata }, ... ] for every key in the namespace
+  async getNamespace() {
+    let result = {}, inputCursor = null;
+
+    while (true) {
+      const { items, cursor, list_complete } = await this.list({ cursor: inputCursor });
+
+      for (let item of items) {
+        const { name, metadata } = item;
+        const value = await this.getItem(name);
+        result[name] = { value, metadata }
+      }
+      if (list_complete) break;
+      inputCursor = cursor;
+    }
+    return result;
+  }
+
   // Returns { items: [{ name, metadata : { creationTime, updateTime } }], cursor, list_complete }
   async list({ limit = 1000, cursor = null } = {}) {
     return this.fetch('GET', '/list', null, { limit, cursor });
