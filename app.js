@@ -1,5 +1,6 @@
 
 import { RemoteStorage } from "./remoteStorage.mjs";
+import { AdminModel } from "./adminModel.mjs";
 
 
 class QuizAdmin {
@@ -23,20 +24,21 @@ class QuizAdmin {
     this.loginButton.addEventListener('click', async () => this.onClickedLogin());
     this.searchInput.addEventListener('input', e => this.onFilterChange(e));
 
-    this.remoteStorage = null;
+    this.adminModel = null;
     this.atKey = localStorage.getItem('atKey');
     if (this.atKey) {
-      this.remoteStorage = new RemoteStorage('QUIZ_RESPONSES', this.atKey);
+      this.adminModel = new AdminModel(this.atKey);
     }
   }
 
   /*************************************************************************************/
   // Get data and start
   async start() {
-    if (this.remoteStorage) {
+    if (this.adminModel) {
       this.loginButton.hidden = true;
-      this.submissions = await this.fetchSubmissions();
-      this.filteredSubmissions = this.filterSubmissions();
+
+      await this.adminModel.fetchData();
+      this.adminModel.setFilter('');
 
       this.editor = await this.startEditor();
       this.render();
@@ -46,134 +48,63 @@ class QuizAdmin {
     }
   }
 
-  /*
-    fetch and reshape the data to an array of objects that represent students, including a time-ordered array of their responses.
-    [
-      { studentID, fullName, firstName, lastName, matchString, submissions: [ { response: 'code', creationTime } ] },
-      ...
-    ]
-  */
-  async fetchSubmissions() {
-    const submissions = [];
-
-    const keys = (await this.remoteStorage.keys()).filter(key => key.startsWith('submission'));
-    for (let key of keys) {
-      const { value, metadata } = await this.remoteStorage.getItemWithMetadata(key);
-      value.creationTime = new Date(metadata.creationTime);
-      submissions.push(value);
-    }
-
-    const submissionsByID = submissions.reduce((acc, value) => {
-      const { response, creationTime } = value;
-      if (!acc[value.studentID]) {
-        const studentID = value.studentID;
-        const firstName = value.firstName;
-        const lastName = value.lastName;
-        const fullName = `${lastName}, ${firstName}`;
-        const matchString = `${fullName} ${studentID}`.toLowerCase();
-
-        acc[value.studentID] = { submissions: [{ response, creationTime }], studentID, fullName, firstName, lastName, matchString };
-      } else {
-        acc[value.studentID].submissions.push({ response, creationTime });
-      }
-      return acc;
-    }, {});
-
-    const result = Object.values(submissionsByID).sort((a, b) => {
-      return a.fullName.localeCompare(b.fullName);
-    });
-
-    return result;
-  }
-
-  filterSubmissions() {
-    const searchString = this.searchInput.value.toLowerCase();
-    return this.submissions.filter(submission => {
-      return !searchString || submission.matchString.includes(searchString);
-    });
-  }
-
   /*************************************************************************************/
   // Event handling
 
   async onClickedLogin() {
     this.atKey = await UIkit.modal.prompt('Enter the admin key');
     if (this.atKey) {
-      this.remoteStorage = new RemoteStorage('QUIZ_RESPONSES', this.atKey);
+      this.adminModel = new AdminModel(this.atKey);
       localStorage.setItem('atKey', this.atKey);
       this.start();
     }
   }
 
   onFilterChange() {
-    this.filteredSubmissions = this.filterSubmissions();
+    const searchString = this.searchInput.value.toLowerCase();
+    this.adminModel.setFilter(searchString);
     this.renderStudentList();
-    this.onListSelect();
   }
 
   async onListSelect(li, studentIndex, submissionIndex) {
-    let firstName = '';
-    let lastName = '';
-    let studentID = '';
-    let creationTime = '';
-    let response = '';
-    let scores = {};
-    this.selection = {};
+    this.listEl.querySelectorAll("li").forEach(el => {
+      el == li ? el.classList.add("uk-active") : el.classList.remove("uk-active")
+    });
+    this.selectedLi = li;;
+    const submission = this.adminModel.select(studentIndex, submissionIndex);
 
-    this.listEl.querySelectorAll("li").forEach(el => el.classList.remove("uk-active"));
-    this.scoringSelects.forEach(selectEl => selectEl.disabled = li == null);
-
-    if (li) {
-      li.classList.add("uk-active");
-      this.selection = { li, studentIndex, submissionIndex };
-
-      const student = this.filteredSubmissions[studentIndex];
-      const submission = student.submissions[submissionIndex];
-
-      firstName = student.firstName;
-      lastName = student.lastName;
-      studentID = student.studentID;
-      creationTime = submission.creationTime;
-      response = submission.response;
-
-      const resultKey = `result-${student.studentID}`;
-      scores = await this.remoteStorage.getItem(resultKey) || {};
-    }
-
-    document.getElementById("student-firstName").textContent = QuizAdmin.truncate(firstName);
-    document.getElementById("student-lastName").textContent = QuizAdmin.truncate(lastName);
-    document.getElementById("student-id").textContent = studentID;
-    document.getElementById("creation-time").textContent = QuizAdmin.formatedDate(creationTime);
+    document.getElementById("student-firstName").textContent = QuizAdmin.truncate(submission.firstName);
+    document.getElementById("student-lastName").textContent = QuizAdmin.truncate(submission.lastName);
+    document.getElementById("student-id").textContent = submission.studentID;
+    document.getElementById("creation-time").textContent = QuizAdmin.formatedDate(submission.creationTime);
 
     this.scoringSelects.forEach(selectEl => {
-      selectEl.value = scores[selectEl.id] || '';
+      selectEl.disabled = false;
+      selectEl.value = submission.scores[selectEl.id] || '';
       this.setSelectValue(selectEl, selectEl.value);
     });
-    this.editor.setValue(response);
+
+    this.editor.setValue(submission.response);
   }
 
   async onScoreSelectorChange(selectEl) {
-    const { studentIndex, submissionIndex } = this.selection;
-    const student = this.filteredSubmissions[studentIndex];
     const id = selectEl.id;
     const value = selectEl.value;
     this.setSelectValue(selectEl, value);
 
-    const resultKey = `result-${student.studentID}`;
+    if (id == 'overall') {
+      this.scoringSelects.forEach(selectEl => {
+        this.setSelectValue(selectEl, value);
+      });
+      this.selectedLi.textContent += '  \u2713';
+    }
+
+    const scores = Object.fromEntries(
+      this.scoringSelects.map(selectEl => [selectEl.id, selectEl.value])
+    );
 
     this.busySpinner.hidden = false;
-    let scores = await this.remoteStorage.getItem(resultKey);
-    if (scores) {
-      if (scores.submissionIndex == submissionIndex) {
-        scores[id] = value;
-      } else {
-        console.log('Previously graded submission index:', scores.submissionIndex, ', overwriting.');
-        scores = { submissionIndex, [id]: value };
-      }
-    } else {
-      scores = { submissionIndex, [id]: value };
-    }
-    await this.remoteStorage.setItem(resultKey, scores);
+    await this.adminModel.setScoresForSelection(scores)
     this.busySpinner.hidden = true;
   }
 
@@ -224,16 +155,24 @@ class QuizAdmin {
   }
 
   renderStudentList() {
-    const liText = this.filteredSubmissions.map((student, studentIndex) => {
+    const liText = this.adminModel.students.map((student, index) => {
       const submissions = student.submissions;
-      const name = student.fullName;
+      let name = student.fullName;
+
       // todo - add a checkmark to the name
       if (submissions.length == 1) {
-        return `<li id="i-${studentIndex}-0" class="selectable-item">${name}</li>`;
+        let submission = submissions[0]
+        if (submission.scores.overall) {
+          name += '  \u2713';
+        }
+        return `<li id="i-${index}-0" class="selectable-item">${name}</li>`;
       } else {
         const innerLiText = submissions.map((submission, submissionIndex) => {
-          const createdStr = QuizAdmin.formatedDate(submission.creationTime);
-          return `<li id="i-${studentIndex}-${submissionIndex}" class="selectable-item uk-margin-left">${createdStr}</li>`;
+          let createdStr = QuizAdmin.formatedDate(submission.creationTime);
+          if (submission.scores.overall) {
+            createdStr += '  \u2713';
+          }
+          return `<li id="i-${index}-${submissionIndex}" class="selectable-item uk-margin-left">${createdStr}</li>`;
         });
         return `
           <li>
@@ -265,11 +204,6 @@ class QuizAdmin {
       const [_, studentIndex, submissionIndex] = item.id.split('-').map(Number);
       this.onListSelect(item, studentIndex, submissionIndex);
     }));
-  }
-
-  static formatedName(submission) {
-    const check = submission.value.scores?.overall ? '  \u2713' : '';
-    return `${QuizAdmin.truncate(submission.fullName, 28)}${check}`;
   }
 
   static formatedDate(date) {
@@ -306,3 +240,4 @@ class QuizAdmin {
 
 const quiz = new QuizAdmin();
 quiz.start();
+
