@@ -70,7 +70,7 @@ class QuizAdmin {
     this.listEl.querySelectorAll("li").forEach(el => {
       el == li ? el.classList.add("uk-active") : el.classList.remove("uk-active")
     });
-    this.selectedLi = li;;
+    this.selectedLi = li;
     const submission = this.adminModel.select(studentIndex, submissionIndex);
 
     document.getElementById("student-firstName").textContent = QuizAdmin.truncate(submission.firstName);

@@ -16,7 +16,7 @@ export class AdminModel {
   }
 
   // fetch and reshape to:
-  // [ { fullName, matchString, submissions: [ { scores, ... } ] } ]
+  // [ { fullName, matchString, resultKey, submissions: [ { scores, ... } ] } ]
   // 
   // Note - student has been scored == for any submission, sub.scores.other != ''
   async fetchData() {
