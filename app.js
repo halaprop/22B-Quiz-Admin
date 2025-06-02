@@ -38,7 +38,7 @@ class QuizAdmin {
       this.loginButton.hidden = true;
 
       await this.adminModel.fetchData();
-      this.adminModel.setFilter('');
+      this.adminModel.setSearchString('');
 
       this.editor = await this.startEditor();
       this.render();
@@ -62,16 +62,17 @@ class QuizAdmin {
 
   onFilterChange() {
     const searchString = this.searchInput.value.toLowerCase();
-    this.adminModel.setFilter(searchString);
+    this.adminModel.setSearchString(searchString);
     this.renderStudentList();
   }
 
-  async onListSelect(li, studentIndex, submissionIndex) {
+  async onListSelect(li) {
     this.listEl.querySelectorAll("li").forEach(el => {
       el == li ? el.classList.add("uk-active") : el.classList.remove("uk-active")
     });
     this.selectedLi = li;
-    const submission = this.adminModel.select(studentIndex, submissionIndex);
+    const [_, studentID, submissionIndex] = li.id.split('-');
+    const submission = this.adminModel.select(studentID, Number(submissionIndex));
 
     document.getElementById("student-firstName").textContent = QuizAdmin.truncate(submission.firstName);
     document.getElementById("student-lastName").textContent = QuizAdmin.truncate(submission.lastName);
@@ -155,8 +156,9 @@ class QuizAdmin {
   }
 
   renderStudentList() {
-    const liText = this.adminModel.students.map((student, index) => {
+    const liText = this.adminModel.filteredStudents().map(student => {
       const submissions = student.submissions;
+      const studentID = student.studentID;
       let name = student.fullName;
 
       // todo - add a checkmark to the name
@@ -165,14 +167,14 @@ class QuizAdmin {
         if (submission.scores.overall) {
           name += '  \u2713';
         }
-        return `<li id="i-${index}-0" class="selectable-item">${name}</li>`;
+        return `<li id="i-${studentID}-0" class="selectable-item">${name}</li>`;
       } else {
         const innerLiText = submissions.map((submission, submissionIndex) => {
           let createdStr = QuizAdmin.formatedDate(submission.creationTime);
           if (submission.scores.overall) {
             createdStr += '  \u2713';
           }
-          return `<li id="i-${index}-${submissionIndex}" class="selectable-item uk-margin-left">${createdStr}</li>`;
+          return `<li id="i-${studentID}-${submissionIndex}" class="selectable-item uk-margin-left">${createdStr}</li>`;
         });
         return `
           <li>
@@ -201,8 +203,7 @@ class QuizAdmin {
 
     const items = Array.from(document.querySelectorAll('.selectable-item'));
     items.forEach(item => item.addEventListener("click", () => {
-      const [_, studentIndex, submissionIndex] = item.id.split('-').map(Number);
-      this.onListSelect(item, studentIndex, submissionIndex);
+      this.onListSelect(item);
     }));
   }
 

@@ -1,22 +1,12 @@
 import { RemoteStorage } from "./remoteStorage.mjs";
 
-
-  // admin model should respond to
-  // fetchData() gets submissions, inserting creationTime into the objects
-  // setFilter
-  // students (filtered array of students each with an array of submissions)
-  // select(studentIndex, submissionIndex) -> { submission scores }
-  // selection -> { submission scores }
-  // scoresForSelection
-  // setScoreForSelection(id, value)
-
 export class AdminModel {
   constructor(remoteStorageKey) {
     this.remoteStorage = new RemoteStorage('QUIZ_RESPONSES', remoteStorageKey);
   }
 
   // fetch and reshape to:
-  // [ { fullName, matchString, resultKey, submissions: [ { scores, ... } ] } ]
+  // [ { studentID, fullName, matchString, submissions: [ { scores, ... } ] } ]
   // 
   // Note - student has been scored == for any submission, sub.scores.other != ''
   async fetchData() {
@@ -35,8 +25,7 @@ export class AdminModel {
       if (!acc[studentID]) {
         const fullName = `${value.lastName}, ${value.firstName}`;
         const matchString = `${fullName} ${studentID}`.toLowerCase();
-        const resultKey = `result-${studentID}`;
-        acc[value.studentID] = { fullName, matchString, resultKey, submissions: [] };
+        acc[value.studentID] = { studentID, fullName, matchString, submissions: [] };
       }
       acc[value.studentID].submissions.push(value);
       return acc;
@@ -46,39 +35,42 @@ export class AdminModel {
     const students = Object.values(studentsByID);
     for (let student of students) {
       student.submissions.sort((a,b) => a.creationTime - b.creationTime);
-      const scores = await this.remoteStorage.getItem(student.resultKey);
+      const scores = await this.remoteStorage.getItem(AdminModel.resultKey(student));
       if (scores) {
         student.submissions[scores.submissionIndex].scores = scores;
       }
     }
-
     this.students = students.sort((a, b) => a.fullName.localeCompare(b.fullName));
   }
 
-  setFilter(searchString) {
-    // todo
+  setSearchString(searchString) {
+    this.searchString = searchString.toLowerCase();
   }
 
-  select(selectedStudentIndex, selectedSubmissionIndex) {
-    this.selectedStudentIndex = selectedStudentIndex;
-    this.selectedSubmissionIndex = selectedSubmissionIndex;
-    return this.selectedSubmission();
+  filteredStudents() {
+    return this.students.filter(student => {
+      return student.matchString.includes(this.searchString);
+    });
   }
 
-  selectedSubmission() {
-    return this.students[this.selectedStudentIndex].submissions[this.selectedSubmissionIndex];
+  select(studentID, submissionIndex) {
+    this.selectedStudent = this.students.find(s => s.studentID == studentID);
+    this.selectedSubmissionIndex = submissionIndex;
+    return this.selectedStudent.submissions[submissionIndex];
   }
 
   async setScoresForSelection(scores) {
-    // todo - what if another submission for the same student has scores set?
-    const selectedStudent = this.students[this.selectedStudentIndex];
-    const selectedSubmission = selectedStudent.submissions[this.selectedSubmissionIndex];
+    // // todo - what if another submission for the same student has scores set?
 
+    const selectedSubmission = this.selectedStudent.submissions[this.selectedSubmissionIndex];
     scores = Object.assign(selectedSubmission.scores, scores);
     scores.submissionIndex = this.selectedSubmissionIndex;
 
-    const resultKey = selectedStudent.resultKey;
-    await this.remoteStorage.setItem(resultKey, scores);
+    await this.remoteStorage.setItem(AdminModel.resultKey(this.selectedStudent), scores);
+  }
+
+  static resultKey(student) {
+    return `result-${student.studentID}`;
   }
 }
 
