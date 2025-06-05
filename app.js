@@ -10,6 +10,8 @@ class QuizAdmin {
 
     this.searchInput = document.getElementById('student-search');
     this.listEl = document.getElementById("student-list");
+    this.editorEl = document.getElementById('editor-container');
+    this.imagesEl = document.getElementById('images-container')
 
     this.rubricFields = [
       { label: 'Declaration', key: 'declaration' },
@@ -24,11 +26,16 @@ class QuizAdmin {
     this.loginButton.addEventListener('click', async () => this.onClickedLogin());
     this.searchInput.addEventListener('input', e => this.onFilterChange(e));
 
+    document.querySelectorAll('.quiz-image').forEach((imgEl, index) => {
+      imgEl.addEventListener('click', e => this.onImageSelect(index));
+    });
+
     this.adminModel = null;
     this.atKey = localStorage.getItem('atKey');
     if (this.atKey) {
       this.adminModel = new AdminModel(this.atKey);
     }
+
   }
 
   /*************************************************************************************/
@@ -85,7 +92,16 @@ class QuizAdmin {
       this.setSelectValue(selectEl, selectEl.value);
     });
 
-    this.editor.setValue(submission.response);
+    const text = submission.response.text ?? '';
+    this.editor.setValue(text);
+
+    const blankSrc = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+    const images = await this.adminModel.fetchImagesForSelection();
+
+    for (let index = 0; index < 2; index++) {
+      const imageEl = document.getElementById(`img-${index}`);
+      imageEl.src = index < images.length ? images[index] : blankSrc;
+    }
   }
 
   async onScoreSelectorChange(selectEl) {
@@ -107,6 +123,13 @@ class QuizAdmin {
     this.busySpinner.hidden = false;
     await this.adminModel.setScoresForSelection(scores)
     this.busySpinner.hidden = true;
+  }
+
+  onImageSelect(index) {
+      const [_, studentID, submissionIndex] = this.selectedLi.id.split('-');
+      const submission = this.adminModel.select(studentID, Number(submissionIndex));
+      const key = encodeURIComponent(submission.response.images[index]);
+      window.open(`popup.html?key=${key}`, '_blank', 'width=800,height=600');
   }
 
   /*************************************************************************************/
@@ -222,7 +245,7 @@ class QuizAdmin {
     require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs' } });
     await new Promise(resolve => require(['vs/editor/editor.main'], resolve));
 
-    const editor = monaco.editor.create(document.getElementById('editor-container'), {
+    const editor = monaco.editor.create(this.editorEl, {
       language: 'cpp',
       theme: 'vs-light',
       automaticLayout: true,

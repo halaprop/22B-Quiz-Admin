@@ -10,7 +10,7 @@ export class AdminModel {
   // 
   // Note - student has been scored == for any submission, sub.scores.other != ''
   async fetchData() {
-    const namespace = await this.remoteStorage.getNamespace();
+    const namespace = await this.remoteStorage.getNamespace('submission', 'result');
     const submissions = [];
 
     const keys = Object.keys(namespace).filter(key => key.startsWith('submission'));
@@ -43,6 +43,10 @@ export class AdminModel {
     this.students = students.sort((a, b) => a.fullName.localeCompare(b.fullName));
   }
 
+  fetchImages(keys) {
+    return Promise.all(keys.map(key => this.remoteStorage.getItem(key)));
+  }
+
   setSearchString(searchString) {
     this.searchString = searchString.toLowerCase();
   }
@@ -67,6 +71,12 @@ export class AdminModel {
     scores.submissionIndex = this.selectedSubmissionIndex;
 
     await this.remoteStorage.setItem(AdminModel.resultKey(this.selectedStudent), scores);
+  }
+
+  async fetchImagesForSelection() {
+    const selectedSubmission = this.selectedStudent.submissions[this.selectedSubmissionIndex];
+    const images = selectedSubmission.response.images;
+    return await this.fetchImages(images);
   }
 
   static resultKey(student) {

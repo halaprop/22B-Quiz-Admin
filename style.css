@@ -23,6 +23,13 @@
   height: 1.7rem !important; 
 }
 
+.quiz-image {
+  width: 310px;
+  height: 400px;
+  border: 1px solid gray;
+  object-fit: contain;
+}
+
 .code-font {
   font-family: 'Courier New', Courier, monospace;
   font-size: 1rem;
