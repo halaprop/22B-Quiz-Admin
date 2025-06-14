@@ -17,7 +17,7 @@ export class AdminModel {
     for (let key of keys) {
       const { value, metadata } = namespace[key];
       const creationTime = new Date(metadata.creationTime);
-      submissions.push({ ...value, creationTime, scores: {} });
+      submissions.push({ ...value, key, creationTime, scores: {} });
     }
 
     const studentsByID = submissions.reduce((acc, value) => {
@@ -68,6 +68,7 @@ export class AdminModel {
 
     const selectedSubmission = this.selectedStudent.submissions[this.selectedSubmissionIndex];
     scores = Object.assign(selectedSubmission.scores, scores);
+    scores.submissionKey = selectedSubmission.key;
     scores.submissionIndex = this.selectedSubmissionIndex;
 
     await this.remoteStorage.setItem(AdminModel.resultKey(this.selectedStudent), scores);

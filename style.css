@@ -20,7 +20,7 @@
 
 .uk-select {
   font-size: 0.85rem;
-  height: 1.7rem !important; 
+  height: 1.7rem !important;
 }
 
 .quiz-image {
@@ -36,7 +36,7 @@
   font-weight: bold;
 }
 
-  .selectable-item:hover {
-    background-color: #f0f0f0;
-    cursor: pointer;
-  }
+.selectable-item:hover {
+  background-color: #f0f0f0;
+  cursor: pointer;
+}
