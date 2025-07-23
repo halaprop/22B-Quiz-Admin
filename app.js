@@ -1,7 +1,5 @@
 
-import { RemoteStorage } from "./remoteStorage.mjs";
 import { AdminModel } from "./adminModel.mjs";
-
 
 class QuizAdmin {
   constructor() {
@@ -35,7 +33,6 @@ class QuizAdmin {
     if (this.atKey) {
       this.adminModel = new AdminModel(this.atKey);
     }
-
   }
 
   /*************************************************************************************/
