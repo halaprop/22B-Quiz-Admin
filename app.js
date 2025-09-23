@@ -108,7 +108,9 @@ class QuizAdmin {
 
     if (id == 'overall') {
       this.scoringSelects.forEach(selectEl => {
-        this.setSelectValue(selectEl, value);
+        if (selectEl.value == '') {
+          this.setSelectValue(selectEl, value);
+        }
       });
       this.selectedLi.textContent += '  \u2713';
     }
