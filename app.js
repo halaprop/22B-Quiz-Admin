@@ -44,7 +44,7 @@ class QuizAdmin {
       await this.adminModel.fetchData();
       this.adminModel.setSearchString('');
 
-      this.editor = await this.startEditor();
+      // this.editor = await this.startEditor();
       this.render();
     } else {
       localStorage.removeItem('atKey');
@@ -90,7 +90,7 @@ class QuizAdmin {
     });
 
     const text = submission.response.text ?? '';
-    this.editor.setValue(text);
+    // this.editor.setValue(text);
 
     const blankSrc = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
     const images = await this.adminModel.fetchImagesForSelection();

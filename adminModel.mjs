@@ -43,6 +43,15 @@ export class AdminModel {
     this.students = students.sort((a, b) => a.fullName.localeCompare(b.fullName));
   }
 
+  // TODO - this seems to produce an incorrect count. (not used)
+  totalGraded() {
+    const graded = this.students.filter(student => {
+      console.log(JSON.stringify(student, null, 4));
+      return student.submissions.some(s => s.scores.overall !== "");
+    });
+    return graded.length;
+  }
+
   fetchImages(keys) {
     return Promise.all(keys.map(key => this.remoteStorage.getItem(key)));
   }
