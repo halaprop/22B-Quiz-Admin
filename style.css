@@ -40,3 +40,15 @@
   background-color: #f0f0f0;
   cursor: pointer;
 }
+#stats-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1.75rem;
+  line-height: 1.75rem;
+}
+
+body {
+  padding-bottom: 1.75rem;
+}

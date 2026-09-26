@@ -52,6 +52,17 @@ export class AdminModel {
     return graded.length;
   }
 
+  // one gradable submission per student; counts are keyed by overall score
+  scoreStats() {
+    const gradable = this.students.length;
+    const overallScores = this.students
+      .map(student => student.submissions.find(s => s.scores.overall)?.scores.overall)
+      .filter(Boolean);
+    const counts = { 1: 0, 2: 0, 3: 0 };
+    overallScores.forEach(score => counts[score]++);
+    return { gradable, graded: overallScores.length, counts };
+  }
+
   fetchImages(keys) {
     return Promise.all(keys.map(key => this.remoteStorage.getItem(key)));
   }

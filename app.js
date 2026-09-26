@@ -10,6 +10,7 @@ class QuizAdmin {
     this.listEl = document.getElementById("student-list");
     this.editorEl = document.getElementById('editor-container');
     this.imagesEl = document.getElementById('images-container')
+    this.statsEl = document.getElementById('stats-bar');
 
     this.rubricFields = [
       { label: 'Declaration', key: 'declaration' },
@@ -112,7 +113,7 @@ class QuizAdmin {
           this.setSelectValue(selectEl, value);
         }
       });
-      this.selectedLi.textContent += '  \u2713';
+      this.selectedLi.querySelector('.score-stars').textContent = '*'.repeat(value);
     }
 
     const scores = Object.fromEntries(
@@ -122,6 +123,7 @@ class QuizAdmin {
     this.busySpinner.hidden = false;
     await this.adminModel.setScoresForSelection(scores)
     this.busySpinner.hidden = true;
+    this.renderStats();
   }
 
   onImageSelect(index) {
@@ -141,6 +143,7 @@ class QuizAdmin {
   async render() {
     this.loginButton.hidden = true;
     this.renderStudentList();
+    this.renderStats();
     let rubricHTML = '';
     this.rubricFields.forEach(rubricField => {
       rubricHTML += this.rubricMarkup(rubricField);
@@ -193,15 +196,16 @@ class QuizAdmin {
         return `
           <li id="i-${studentID}-0" class="selectable-item uk-flex uk-flex-between uk-flex-middle">
             <span>${name}</span>
-            <span>${stars(submission)}</span>
+            <span class="score-stars">${stars(submission)}</span>
           </li>`;
       } else {
         const innerLiText = submissions.map((submission, submissionIndex) => {
-          let createdStr = QuizAdmin.formatedDate(submission.creationTime);
-          if (submission.scores.overall) {
-            createdStr += ` ${stars(submission)}`;
-          }
-          return `<li id="i-${studentID}-${submissionIndex}" class="selectable-item uk-margin-left">${createdStr}</li>`;
+          const createdStr = QuizAdmin.formatedDate(submission.creationTime);
+          return `
+            <li id="i-${studentID}-${submissionIndex}" class="selectable-item uk-margin-left uk-flex uk-flex-between uk-flex-middle">
+              <span>${createdStr}</span>
+              <span class="score-stars">${stars(submission)}</span>
+            </li>`;
         });
         return `
           <li>
@@ -232,6 +236,16 @@ class QuizAdmin {
     items.forEach(item => item.addEventListener("click", () => {
       this.onListSelect(item);
     }));
+  }
+
+  renderStats() {
+    const { gradable, graded, counts } = this.adminModel.scoreStats();
+    const percent = n => gradable ? Math.round(100 * n / gradable) : 0;
+    const statText = [
+      `Graded ${graded}/${gradable} (${percent(graded)}%)`,
+      ...[1, 2, 3].map(score => `${'*'.repeat(score)} ${counts[score]} (${percent(counts[score])}%)`)
+    ];
+    this.statsEl.innerHTML = statText.map(text => `<span class="uk-margin-right">${text}</span>`).join('');
   }
 
   static formatedDate(date) {
