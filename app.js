@@ -178,6 +178,7 @@ class QuizAdmin {
   }
 
   renderStudentList() {
+    const stars = submission => submission.scores.overall ? '*'.repeat(submission.scores.overall) : "";
     const liText = this.adminModel.filteredStudents().map(student => {
       const submissions = student.submissions;
       const studentID = student.studentID;
@@ -187,14 +188,18 @@ class QuizAdmin {
       if (submissions.length == 1) {
         let submission = submissions[0]
         if (submission.scores.overall) {
-          name += '  \u2713';
+          // name += '  \u2713';
         }
-        return `<li id="i-${studentID}-0" class="selectable-item">${name}</li>`;
+        return `
+          <li id="i-${studentID}-0" class="selectable-item uk-flex uk-flex-between uk-flex-middle">
+            <span>${name}</span>
+            <span>${stars(submission)}</span>
+          </li>`;
       } else {
         const innerLiText = submissions.map((submission, submissionIndex) => {
           let createdStr = QuizAdmin.formatedDate(submission.creationTime);
           if (submission.scores.overall) {
-            createdStr += '  \u2713';
+            createdStr += ` ${stars(submission)}`;
           }
           return `<li id="i-${studentID}-${submissionIndex}" class="selectable-item uk-margin-left">${createdStr}</li>`;
         });
