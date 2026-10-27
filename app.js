@@ -1,6 +1,8 @@
 
 import { AdminModel } from "./adminModel.mjs";
 
+const blankSrc = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+
 class QuizAdmin {
   constructor() {
     this.busySpinner = document.getElementById('busy-spinner');
@@ -93,7 +95,6 @@ class QuizAdmin {
     const text = submission.response.text ?? '';
     // this.editor.setValue(text);
 
-    const blankSrc = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
     const images = await this.adminModel.fetchImagesForSelection();
 
     for (let index = 0; index < 2; index++) {
@@ -127,10 +128,9 @@ class QuizAdmin {
   }
 
   onImageSelect(index) {
-      const [_, studentID, submissionIndex] = this.selectedLi.id.split('-');
-      const submission = this.adminModel.select(studentID, Number(submissionIndex));
-      const key = encodeURIComponent(submission.response.images[index]);
-      window.open(`popup.html?key=${key}`, '_blank', 'width=800,height=600');
+    const imageEls = [...document.querySelectorAll('.quiz-image')].filter(imgEl => imgEl.src !== blankSrc);
+    const items = imageEls.map(imgEl => ({ source: imgEl.src, type: 'image' }));
+    if (items[index]) UIkit.lightboxPanel({ items }).show(index);
   }
 
   /*************************************************************************************/
